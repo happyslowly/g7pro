@@ -1,5 +1,5 @@
 {
-  description = "C dev environment";
+  description = "Rust dev environment";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/26.05";
 
