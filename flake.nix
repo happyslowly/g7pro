@@ -4,28 +4,40 @@
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/26.05";
 
   outputs =
-    { nixpkgs, ... }:
+    { self, nixpkgs, ... }:
     let
-      system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
+      systems = [ "x86_64-linux" ];
+      forAllSystems = nixpkgs.lib.genAttrs systems;
     in
     {
-      devShells.${system}.default = pkgs.mkShell {
-        packages = with pkgs; [
-          cargo
-          rustc
-          clippy
-          rust-analyzer
-          rustfmt
-          taplo
+      packages = forAllSystems (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          g7pro = pkgs.callPackage ./default.nix { };
+          default = pkgs.callPackage ./default.nix { };
+        }
+      );
 
-          pkg-config
-          systemd
-        ];
+      devShells = forAllSystems (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          default = pkgs.mkShell {
+            inputsFrom = [ self.packages.${system}.g7pro ];
 
-        shellHook = ''
-          export MANPATH="${pkgs.lib.getMan pkgs.man-pages}/share/man:${pkgs.man-pages-posix}/share/man:''${MANPATH:-}"
-        '';
-      };
+            packages = with pkgs; [
+              rust-analyzer
+              rustfmt
+              clippy
+              taplo
+            ];
+          };
+        }
+      );
     };
 }
